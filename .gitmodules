@@ -1,0 +1,6 @@
+[submodule "serving"]
+	path = serving
+	url = https://github.com/tensorflow/serving
+[submodule "tensorflow"]
+	path = tensorflow
+	url = https://github.com/tensorflow/tensorflow
