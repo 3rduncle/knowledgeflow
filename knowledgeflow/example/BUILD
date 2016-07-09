@@ -31,6 +31,29 @@ py_library(
 	],
 )
 
+cc_library(
+    name = "serving",
+    deps = [
+        "@tf_serving//tensorflow_serving/servables/tensorflow:session_bundle_config_proto",
+        "@tf_serving//tensorflow_serving/servables/tensorflow:session_bundle_factory",
+        "@tf_serving//tensorflow_serving/session_bundle",
+        "@tf_serving//tensorflow_serving/session_bundle:manifest_proto",
+        "@tf_serving//tensorflow_serving/session_bundle:signature",
+    ],
+)
+
+cc_library(
+    name = "tensorflow",
+    linkopts = ["-lm"],
+    deps = [
+        "@org_tensorflow//tensorflow/core:core_cpu",
+        "@org_tensorflow//tensorflow/core:framework",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:protos_all_cc",
+        "@org_tensorflow//tensorflow/core:tensorflow",
+    ],
+)
+
 py_library(
     name = "mnist_input_data",
     srcs = ["mnist_input_data.py"],
@@ -44,5 +67,27 @@ py_binary(
     deps = [
         ":mnist_input_data",
 		":exporter",
+    ],
+)
+
+py_binary(
+    name = "partition_export",
+    srcs = [
+        "partition_export.py",
+    ],
+    deps = [
+		":exporter",
+    ],
+)
+
+cc_binary(
+    name = "partition_inference",
+    srcs = [
+        "partition_inference.cc",
+    ],
+    linkopts = ["-lm"],
+    deps = [
+		":serving",
+		":tensorflow",
     ],
 )
