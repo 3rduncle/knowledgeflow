@@ -58,106 +58,106 @@ using tensorflow::TensorShape;
 using tensorflow::Status;
 
 class ServiceImpl final {
- public:
-  explicit ServiceImpl(std::unique_ptr<SessionBundle> bundle)
-      : bundle_(std::move(bundle)) {
-    signature_status_ = tensorflow::serving::GetClassificationSignature(
-        bundle_->meta_graph_def, &signature_);
-  }
-
-  Status Classify(const float& x, float& y) {
-    // Transform protobuf input to inference input tensor and create
-    // output tensor placeholder.
-    // See partition_export.py for details.
-    Tensor input(tensorflow::DT_FLOAT, {1, 1});
-	input.flat<float>()(0) = x;
-    std::vector<Tensor> outputs;
-
-    // Run inference.
-    if (!signature_status_.ok()) {
-      return signature_status_;
+public:
+    explicit ServiceImpl(std::unique_ptr<SessionBundle> bundle)
+        : bundle_(std::move(bundle)) {
+        signature_status_ = tensorflow::serving::GetClassificationSignature(
+                                bundle_->meta_graph_def, &signature_);
     }
-    // WARNING(break-tutorial-inline-code): The following code snippet is
-    // in-lined in tutorials, please update tutorial documents accordingly
-    // whenever code changes.
-    const tensorflow::Status status = bundle_->session->Run(
+
+    Status Classify(const float& x, float& y) {
+        // Transform protobuf input to inference input tensor and create
+        // output tensor placeholder.
+        // See partition_export.py for details.
+        Tensor input(tensorflow::DT_FLOAT, {1, 1});
+        input.flat<float>()(0) = x;
+        std::vector<Tensor> outputs;
+
+        // Run inference.
+        if (!signature_status_.ok()) {
+            return signature_status_;
+        }
+        // WARNING(break-tutorial-inline-code): The following code snippet is
+        // in-lined in tutorials, please update tutorial documents accordingly
+        // whenever code changes.
+        const tensorflow::Status status = bundle_->session->Run(
         {
-			{
-				signature_.input().tensor_name(), input
-			}
-		},
+            {
+                signature_.input().tensor_name(), input
+            }
+        },
         {
-			signature_.scores().tensor_name()
-		}, 
-		{}, &outputs
-	);
-    if (!status.ok()) {
-      return status;
+            signature_.scores().tensor_name()
+        },
+        {}, &outputs
+        );
+        if (!status.ok()) {
+            return status;
+        }
+
+        // Transform inference output tensor to protobuf output.
+        // See mnist_export.py for details.
+        if (outputs.size() != 1) {
+            std::cerr << "WRONG OUPUT SIZE" << std::endl;
+            return tensorflow::errors::Internal("WRONG OUPUT SIZE");
+        }
+        const Tensor& score_tensor = outputs[0];
+        const TensorShape expected_shape({1, 1});
+        if (!score_tensor.shape().IsSameSize(expected_shape)) {
+            std::cerr << "WRONG OUPUT SIZE" << std::endl;
+            return tensorflow::errors::Internal("WRONG OUPUT SHAPE");;
+        }
+        const auto score_flat = outputs[0].flat<float>();
+        y = score_flat(0);
+        return Status::OK();
     }
 
-    // Transform inference output tensor to protobuf output.
-    // See mnist_export.py for details.
-    if (outputs.size() != 1) {
-	  std::cerr << "WRONG OUPUT SIZE" << std::endl;
-	  return tensorflow::errors::Internal("WRONG OUPUT SIZE");
-    }
-    const Tensor& score_tensor = outputs[0];
-    const TensorShape expected_shape({1, 1});
-    if (!score_tensor.shape().IsSameSize(expected_shape)) {
-	  std::cerr << "WRONG OUPUT SIZE" << std::endl;
-	  return tensorflow::errors::Internal("WRONG OUPUT SHAPE");;
-    }
-    const auto score_flat = outputs[0].flat<float>();
-	y = score_flat(0);
-    return Status::OK();
-  }
-
- private:
-  std::unique_ptr<SessionBundle> bundle_;
-  tensorflow::Status signature_status_;
-  ClassificationSignature signature_;
+private:
+    std::unique_ptr<SessionBundle> bundle_;
+    tensorflow::Status signature_status_;
+    ClassificationSignature signature_;
 };
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
-    LOG(FATAL) << "Usage: mnist_inference /path/to/export";
-  }
-  const string bundle_path(argv[1]);
+    if (argc != 2) {
+        LOG(FATAL) << "Usage: mnist_inference /path/to/export";
+    }
+    const string bundle_path(argv[1]);
 
-  tensorflow::port::InitMain(argv[0], &argc, &argv);
+    tensorflow::port::InitMain(argv[0], &argc, &argv);
 
-  // WARNING(break-tutorial-inline-code): The following code snippet is
-  // in-lined in tutorials, please update tutorial documents accordingly
-  // whenever code changes.
+    // WARNING(break-tutorial-inline-code): The following code snippet is
+    // in-lined in tutorials, please update tutorial documents accordingly
+    // whenever code changes.
 
-  SessionBundleConfig session_bundle_config;
+    SessionBundleConfig session_bundle_config;
 
-  //////
-  // Request batching, keeping default values for the tuning parameters.
-  //
-  // (If you prefer to disable batching, simply omit the following lines of code
-  // such that session_bundle_config.batching_parameters remains unset.)
-  BatchingParameters* batching_parameters =
-      session_bundle_config.mutable_batching_parameters();
-  batching_parameters->mutable_thread_pool_name()->set_value(
-      "service_batch_threads");
-  // Use a very large queue, to avoid rejecting requests. (Note: a production
-  // server with load balancing may want to use the default, much smaller,
-  // value.)
-  batching_parameters->mutable_max_enqueued_batches()->set_value(1000);
-  //////
+    //////
+    // Request batching, keeping default values for the tuning parameters.
+    //
+    // (If you prefer to disable batching, simply omit the following lines of code
+    // such that session_bundle_config.batching_parameters remains unset.)
+    BatchingParameters* batching_parameters =
+        session_bundle_config.mutable_batching_parameters();
+    batching_parameters->mutable_thread_pool_name()->set_value(
+        "service_batch_threads");
+    // Use a very large queue, to avoid rejecting requests. (Note: a production
+    // server with load balancing may want to use the default, much smaller,
+    // value.)
+    batching_parameters->mutable_max_enqueued_batches()->set_value(1000);
+    //////
 
-  std::unique_ptr<SessionBundleFactory> bundle_factory;
-  TF_QCHECK_OK(
-      SessionBundleFactory::Create(session_bundle_config, &bundle_factory));
-  std::unique_ptr<SessionBundle> bundle(new SessionBundle);
-  TF_QCHECK_OK(bundle_factory->CreateSessionBundle(bundle_path, &bundle));
+    std::unique_ptr<SessionBundleFactory> bundle_factory;
+    TF_QCHECK_OK(
+        SessionBundleFactory::Create(session_bundle_config, &bundle_factory));
+    std::unique_ptr<SessionBundle> bundle(new SessionBundle);
+    TF_QCHECK_OK(bundle_factory->CreateSessionBundle(bundle_path, &bundle));
 
-  // END WARNING(break-tutorial-inline-code)
-  ServiceImpl service(std::move(bundle));
-  float x = 2.0;
-  float y = 0.0;
-  service.Classify(x, y);
-  std::printf("%10g\n", y);
-  return 0;
+    // END WARNING(break-tutorial-inline-code)
+    ServiceImpl service(std::move(bundle));
+    float x = 2.0;
+    float y = 0.0;
+    service.Classify(x, y);
+    std::printf("%10g\n", y);
+    return 0;
 }
