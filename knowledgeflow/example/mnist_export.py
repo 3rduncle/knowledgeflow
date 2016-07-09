@@ -30,7 +30,7 @@ import sys
 
 import tensorflow as tf
 
-from tensorflow_serving.example import mnist_input_data
+from knowledgeflow.example import mnist_input_data
 from tensorflow_serving.session_bundle import exporter
 
 tf.app.flags.DEFINE_integer('training_iteration', 1000,

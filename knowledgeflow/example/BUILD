@@ -24,6 +24,14 @@ filegroup(
 )
 
 py_library(
+	name = "exporter",
+	deps = [
+		"@tf_serving//tensorflow_serving/session_bundle:exporter",
+		"@org_tensorflow//tensorflow:tensorflow_py",
+	],
+)
+
+py_library(
     name = "mnist_input_data",
     srcs = ["mnist_input_data.py"],
 )
@@ -35,7 +43,6 @@ py_binary(
     ],
     deps = [
         ":mnist_input_data",
-        "@tf_serving//tensorflow_serving/session_bundle:exporter",
-        "@org_tensorflow//tensorflow:tensorflow_py",
+		":exporter",
     ],
 )
