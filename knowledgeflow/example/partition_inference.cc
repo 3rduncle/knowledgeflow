@@ -13,13 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-// A gRPC server that classifies images into digit 0-9.
-// Given each request with an image pixels encoded as floats, the server
-// responds with 10 float values as probabilities for digit 0-9 respectively.
-// The classification is done by running image data through a simple softmax
-// regression network trained and exported by mnist_export.py.
-// The intention of this example to demonstrate usage of Tensorflow
-// APIs in an end-to-end scenario.
+// y = x * w
+// 这个例子演示了tensorflow如何只导出部分模型作为serving使用。
+// 导出的的例子参考partition_export.py
+// 整个模型为y = (x + 1) * w
+// 从模型中间变量开始导出
+// 导出模型为y = x * w
+// service服务时可以对中间变量feed，完成剩余计算
 
 #include <algorithm>
 #include <memory>
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
   BatchingParameters* batching_parameters =
       session_bundle_config.mutable_batching_parameters();
   batching_parameters->mutable_thread_pool_name()->set_value(
-      "mnist_service_batch_threads");
+      "service_batch_threads");
   // Use a very large queue, to avoid rejecting requests. (Note: a production
   // server with load balancing may want to use the default, much smaller,
   // value.)
@@ -158,6 +158,6 @@ int main(int argc, char** argv) {
   float x = 2.0;
   float y = 0.0;
   service.Classify(x, y);
-  std::printf("%6g/n", y);
+  std::printf("%10g\n", y);
   return 0;
 }
