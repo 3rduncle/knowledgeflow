@@ -1,0 +1,11 @@
+startup --output_base=.cache
+build --force_python=py2
+build --python2_path=python
+build:debug -c dbg
+build:debug --javacopt="-g"
+build:debug --copt="-g"
+build:debug --strip="never"
+
+build --spawn_strategy=standalone --genrule_strategy=standalone
+test --spawn_strategy=standalone --genrule_strategy=standalone
+run --spawn_strategy=standalone --genrule_strategy=standalone
