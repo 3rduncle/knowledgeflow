@@ -9,8 +9,11 @@ def read_single_line_example(filename):
 
 line_t, value_t = read_single_line_example(sys.argv[0])
 # 将reader返回的tensor打包成batched tensor，
-# 注意如果最后几个样本不够一个batch，
-# 最后几个样本将失效。
+# 注意：tf.train.batch本身如果遇到输入的tensor的
+# 最后几个样本不够组成一个batch。会从输入tensor的
+# 头部重新获取。但是，如果输入的是一个reader tensor，
+# 它在end of tensor的时候会抛出一个OutOfRangeError的异常，
+# 这将导致最后几个样本失效。
 batch_line_t, batch_value_t = tf.train.batch(
     [line_t, value_t], 
 	batch_size = 4,
