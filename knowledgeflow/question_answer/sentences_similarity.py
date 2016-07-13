@@ -138,6 +138,7 @@ class SentenceSimilarityTask(object):
                 if MAP > best_test_map:
                     best_test_map = MAP
                     if self.predict: test.dumpResult(self.predict)
+                    saver = tf.train.Saver(self.tensors['weights'], sharded=False)
             for xq, xa, y in self.qapairs['train'].pairwiseSampling(50):
                 self.train_step(xq, xa, y)
 

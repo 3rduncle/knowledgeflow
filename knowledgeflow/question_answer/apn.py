@@ -226,16 +226,19 @@ class APNBase(object):
     def buildModel(self, input, output):
         pass
 
-    def export(self, path):
-        saver = tf.train.Saver(self.tensor['weights'], sharded=False)
+    def export(self, path, session):
+        #saver = tf.train.Saver(self.tensors['weights'], sharded=False)
+        saver = tf.train.Saver(sharded=True)
         from tensorflow_serving.session_bundle import exporter
         model_exporter = exporter.Exporter(saver)
-        signature = exporter.classification_signature(
-            input_tensor=m1,
-            scores_tensor=y1
-        )
+        named_tensor_bindings = {
+            "input_q": self.tensors['q_input'],
+            "input_a": self.tensors['a_input'],
+            "output_y": self.tensors['similarity']
+        }
+        signature = {"generic": exporter.generic_signature(named_tensor_bindings)}
         model_exporter.init(
-            sess.graph.as_graph_def(),
-            default_graph_signature=signature
+            session.graph.as_graph_def(),
+            named_graph_signatures=signature
         )
-        model_exporter.export(path, tf.constant(0), sess) 
+        model_exporter.export(path, tf.constant(0), session) 
