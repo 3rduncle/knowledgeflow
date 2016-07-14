@@ -12,11 +12,10 @@ from collections import OrderedDict
 import tensorflow as tf
 random.seed(2)
 np.random.seed(9527)
-sys.path.append('../..')
-from utility import qa_utils
-from utility.qa_utils import QaPairsTrain, QaPairsTest
-from utility.utility import build_vocab, embedding_layer_weights, load_word2vec
-from lcd import LCDBase, Conv1DLCD, Conv1DConcatLCD, margin_hinge, letor_binary_crossentropy
+from knowledgeflow.utility import qa_utils
+from knowledgeflow.utility.qa_utils import QaPairsTrain, QaPairsTest
+from knowledgeflow.utility.utility import build_vocab, embedding_layer_weights, load_word2vec
+#from lcd import LCDBase, Conv1DLCD, Conv1DConcatLCD, margin_hinge, letor_binary_crossentropy
 from apn import APNBase
 
 logging.basicConfig(level=logging.DEBUG,
@@ -27,8 +26,6 @@ logging.basicConfig(level=logging.DEBUG,
 class SentenceSimilarityTask(object):
     def __init__(self, path):
         self.loadConfig(path)
-        self.q_length = self.conf.getint('task', 'q_length')
-        self.a_length = self.conf.getint('task', 'a_length')
         self.wdim = self.conf.getint('task', 'wdim')
         train = self.conf.get('task', 'train')
         print 'train path', train
@@ -59,8 +56,8 @@ class SentenceSimilarityTask(object):
             self.qapairs['dev'] = QaPairsTest(dev)
         self.qmax = max([qa.qmax for qa in self._availableParis()])
         self.amax = max([qa.amax for qa in self._availableParis()])
-        print 'Q Length', self.qmax
-        print 'A Length', self.amax
+        logging.info('Q Length %d' % self.qmax)
+        logging.info('A Length %d' % self.amax)
         self.data = []
         for name, pair in self.qapairs.items():
             self.data += pair.xq_data
@@ -79,8 +76,11 @@ class SentenceSimilarityTask(object):
         word2vec = load_word2vec(coll, self.reversed_vocab)
         return embedding_layer_weights(self.reversed_vocab, word2vec, self.wdim)
 
+    def randomEmbedding(self):
+        return embedding_layer_weights(self.reversed_vocab, {}, self.wdim)
+
     def equipModel(self):
-        weights = self.remoteEmbedding()
+        weights = embedding_layer_weights(self.reversed_vocab, {}, self.wdim)
         impl = APNBase(self.wdim)
         impl.readDefaultConfig(self.conf)
         impl.setEmbedding(weights[0])
@@ -138,7 +138,7 @@ class SentenceSimilarityTask(object):
                 if MAP > best_test_map:
                     best_test_map = MAP
                     if self.predict: test.dumpResult(self.predict)
-                    saver = tf.train.Saver(self.tensors['weights'], sharded=False)
+                    self.model.export('APN%f' % MAP, self.sess)
             for xq, xa, y in self.qapairs['train'].pairwiseSampling(50):
                 self.train_step(xq, xa, y)
 
@@ -148,7 +148,7 @@ class SentenceSimilarityTask(object):
         return self.qapairs.values()
 
 def main():
-    task = SentenceSimilarityTask('./configure/lcd_comments.conf')
+    task = SentenceSimilarityTask('./configure/comment_rank.conf')
     task.equipModel()
     task.trainEpoch()
 

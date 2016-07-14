@@ -12,8 +12,9 @@ def step2(x, reuse=False):
 		w = tf.get_variable('weigths', [1], initializer=tf.random_normal_initializer())
 	return x * w
 
-x1 = tf.placeholder(tf.float32, shape=[1], name="step0")
-x2 = tf.placeholder(tf.float32, shape=[1], name="step0")
+x1 = tf.placeholder(tf.float32, shape=[1], name="x1")
+x2 = tf.placeholder(tf.float32, shape=[1], name="x2")
+x3 = tf.placeholder(tf.float32, shape=[1], name="x3")
 
 with tf.Session() as sess:
 	m1 = step1(x1)

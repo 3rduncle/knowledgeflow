@@ -91,3 +91,15 @@ cc_binary(
 		":tensorflow",
 	],
 )
+
+cc_binary(
+	name = "apn_partition_inference",
+	srcs = [
+		"apn_partition_inference.cc",
+	],
+	linkopts = ["-lm"],
+	deps = [
+		":serving",
+		":tensorflow",
+	],
+)
