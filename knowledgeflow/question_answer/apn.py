@@ -80,40 +80,6 @@ class APNBase(object):
 			self.tensors['q_embedding'] = tf.nn.embedding_lookup(W, self.tensors['q_input'])
 			self.tensors['a_embedding'] = tf.nn.embedding_lookup(W, self.tensors['a_input'])
 
-	def buildEmbeddingGather(self):
-		weights = self.embedding_params.get('weights')
-		#assert weights
-		trainable = self.params.get('embedding_trainable', False)
-		if trainable:
-			logging.info('Embedding Weights is Trainable!')
-		else:
-			logging.info('Embedding Weights is Not Trainable!')
-		with tf.name_scope('embedding'):
-			W = tf.Variable(
-				weights,
-				name = 'embedding',
-				trainable = trainable,
-				dtype = tf.float32
-			)
-			self.tensors['q_embedding'] = tf.gather(W, self.tensors['q_input'])
-			self.tensors['a_embedding'] = tf.gather(W, self.tensors['a_input'])
-
-
-	def buildEmbeddingKeras(self):
-		weights = self.embedding_params.get('weights')
-		trainable = self.params.get('embedding_trainable', False)
-		with tf.name_scope('embedding'):
-			assert weights.shape[1] == self.wdim
-			embedding = Embedding(
-				weights.shape[0],
-				weights.shape[1],
-				weights = [weights],
-				trainable = trainable
-			)
-			self.tensors['q_embedding'] = embedding(self.tensors['q_input'])
-			self.tensors['a_embedding'] = embedding(self.tensors['a_input'])
-		self.layers['embedding'] = embedding
-
 	def buildConvolution(self):
 		q_embedding = self.tensors['q_embedding']
 		a_embedding = self.tensors['a_embedding']
@@ -213,13 +179,12 @@ class APNBase(object):
 			self.tensors['loss'] = margin_hinge(label, score, 0.5)
 
 	def build(self):
-		with tf.device('/cpu'):
-			self.buildInput()
-			self.buildEmbedding()
-			self.buildConvolution()
-			self.buildAttention()
-			self.buildSimilarity()
-			self.buildLoss()
+		self.buildInput()
+		self.buildEmbedding()
+		self.buildConvolution()
+		self.buildAttention()
+		self.buildSimilarity()
+		self.buildLoss()
 
 	def buildModel(self, input, output):
 		pass

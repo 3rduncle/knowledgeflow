@@ -149,8 +149,6 @@ class QaPairs(object):
                 self.pos2neg[idx] = neg
             for idx in neg:
                 self.neg2pos[idx] = pos
-        print 'POS2NEG %d' % len(self.pos2neg)
-        print 'NEG2POS %d' % len(self.neg2pos)
 
     def build(self, vocabulary, q_length, a_length):
         self.xq_data = [map(lambda x: vocabulary[x], terms) for terms in self.xq_data]
